@@ -1,6 +1,6 @@
 import os
-import time
 import requests
+from flask import Flask, request, jsonify
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
@@ -11,38 +11,7 @@ HEADERS = {
     "Content-Type": "application/json"
 }
 
-offset = None
-
-
-def get_updates():
-    global offset
-
-    params = {}
-
-    if offset:
-        params["offset"] = offset
-
-    r = requests.get(
-        f"{API}/updates",
-        headers=HEADERS,
-        params=params
-    )
-
-    print("STATUS:", r.status_code)
-    print("BODY:", r.text)
-
-    if r.status_code != 200:
-        time.sleep(30)
-        return []
-
-    data = r.json()
-
-    updates = data.get("updates", [])
-
-    if updates:
-        offset = updates[-1]["update_id"] + 1
-
-    return updates
+app = Flask(__name__)
 
 
 def send_message(chat_id, text):
@@ -61,26 +30,31 @@ def send_message(chat_id, text):
     print("SEND:", r.status_code, r.text)
 
 
-print("MAX TEST BOT STARTED")
+@app.route("/")
+def home():
+    return "MAX BOT ONLINE"
 
-while True:
 
-    updates = get_updates()
+@app.route("/webhook", methods=["POST"])
+def webhook():
 
-    for u in updates:
+    data = request.json
+    print("EVENT:", data)
 
-        message = u.get("message")
+    message = data.get("message")
 
-        if not message:
-            continue
+    if not message:
+        return jsonify({"ok": True})
 
-        text = message.get("text", "").lower()
-        chat_id = message["chat"]["chat_id"]
+    text = message.get("text", "").lower()
+    chat_id = message["chat"]["chat_id"]
 
-        print("MESSAGE:", text)
+    if text == "привет":
+        send_message(chat_id, "привет")
 
-        if text == "привет":
+    return jsonify({"ok": True})
 
-            send_message(chat_id, "привет")
 
-    time.sleep(40)
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
