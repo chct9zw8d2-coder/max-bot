@@ -33,12 +33,14 @@ def get_updates():
 
     if r.status_code == 429:
 
-        print("RATE LIMIT — WAIT 40 sec")
-        time.sleep(40)
+        print("RATE LIMIT — WAIT 60 sec")
+        time.sleep(60)
         return []
 
     if r.status_code != 200:
+
         print("ERROR:", r.text)
+        time.sleep(60)
         return []
 
     data = r.json()
@@ -87,4 +89,4 @@ while True:
 
         send_message(chat_id, "Сообщение получено")
 
-    time.sleep(30)
+    time.sleep(45)
