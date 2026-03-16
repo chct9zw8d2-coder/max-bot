@@ -4,16 +4,12 @@ import os
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-# ID пользователя Аарон
-AARON_ID = "f9LHodD0cOL-WYXnRJyS7mWEBoC7ycc-eOamlsDOOUxot0lWpbnAKADh3CE"
-
 API = "https://platform-api.max.ru/bot/v1"
 
-# храним соответствие
-# сообщение от клиента -> chat_id клиента
-clients = {}
 
-
+# -----------------------------
+# отправка сообщения
+# -----------------------------
 def send_message(chat_id, text):
 
     url = f"{API}/messages/send"
@@ -29,34 +25,52 @@ def send_message(chat_id, text):
     }
 
     try:
-        r = requests.post(url, headers=headers, json=payload)
+
+        r = requests.post(
+            url,
+            headers=headers,
+            json=payload,
+            timeout=10
+        )
+
         print("SEND STATUS:", r.status_code)
+        print("SEND RESPONSE:", r.text)
 
     except Exception as e:
+
         print("SEND ERROR:", e)
 
 
+# -----------------------------
+# получение событий
+# -----------------------------
 def get_events():
 
-    url = f"{API}/events"
+    url = f"{API}/events/get"
 
     headers = {
-        "Authorization": f"Bearer {BOT_TOKEN}"
+        "Authorization": f"Bearer {BOT_TOKEN}",
+        "Content-Type": "application/json"
     }
 
     try:
 
-        r = requests.get(url, headers=headers, timeout=30)
+        r = requests.post(
+            url,
+            headers=headers,
+            timeout=30
+        )
+
+        print("EVENT STATUS:", r.status_code)
+
+        # ВАЖНО — смотрим полный ответ API
+        print("EVENT RESPONSE:", r.text)
 
         if r.status_code == 200:
 
             data = r.json()
 
             return data.get("events", [])
-
-        else:
-
-            print("EVENT STATUS:", r.status_code)
 
     except Exception as e:
 
@@ -65,45 +79,9 @@ def get_events():
     return []
 
 
-def handle_client(chat_id, text):
-
-    print("CLIENT:", chat_id, text)
-
-    clients[chat_id] = chat_id
-
-    message_for_aaron = f"""
-Новое сообщение клиента
-
-ID клиента:
-{chat_id}
-
-Сообщение:
-{text}
-
-Ответь на это сообщение.
-"""
-
-    send_message(AARON_ID, message_for_aaron)
-
-    send_message(
-        chat_id,
-        "Ваше сообщение передано администратору."
-    )
-
-
-def handle_aaron(text):
-
-    print("AARON REPLY:", text)
-
-    if len(clients) == 0:
-        return
-
-    # отправляем последнему клиенту
-    last_client = list(clients.keys())[-1]
-
-    send_message(last_client, text)
-
-
+# -----------------------------
+# основной цикл
+# -----------------------------
 def main():
 
     print("MAX BOT STARTED")
@@ -111,6 +89,8 @@ def main():
     while True:
 
         events = get_events()
+
+        print("EVENTS PARSED:", events)
 
         for ev in events:
 
@@ -123,19 +103,24 @@ def main():
 
                 chat_id = message["chat"]["chat_id"]
 
-                sender = message["sender"]["user_id"]
-
                 text = message.get("text", "")
 
-                print("MESSAGE:", sender, text)
+                print("NEW MESSAGE:", text)
 
-                if sender == AARON_ID:
+                if text == "/start":
 
-                    handle_aaron(text)
+                    send_message(
+                        chat_id,
+                        "👋 Добро пожаловать в стоматологию Райтер!\n\n"
+                        "Напишите ваш вопрос или заявку."
+                    )
 
                 else:
 
-                    handle_client(chat_id, text)
+                    send_message(
+                        chat_id,
+                        "Спасибо! Администратор скоро ответит."
+                    )
 
             except Exception as e:
 
@@ -144,5 +129,8 @@ def main():
         time.sleep(2)
 
 
+# -----------------------------
+# запуск
+# -----------------------------
 if __name__ == "__main__":
     main()
