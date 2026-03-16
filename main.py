@@ -4,20 +4,25 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-MAX_TOKEN = os.getenv("MAX_TOKEN")
+# ===== НАСТРОЙКИ =====
 
+MAX_TOKEN = os.getenv("MAX_TOKEN")
 API_URL = "https://platform-api.max.ru"
 
 headers = {
-    "Authorization": MAX_TOKEN,
+    "Authorization": f"Bearer {MAX_TOKEN}",
     "Content-Type": "application/json"
 }
 
+
+# ===== ПРОВЕРКА СЕРВЕРА =====
 
 @app.route("/")
 def home():
     return "MAX BOT WORKING"
 
+
+# ===== WEBHOOK =====
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
@@ -44,8 +49,10 @@ def webhook():
     except Exception as e:
         print("ERROR:", e)
 
-    return jsonify({"status": "ok"})
+    return jsonify({"ok": True})
 
+
+# ===== ОТПРАВКА СООБЩЕНИЯ =====
 
 def send_message(chat_id, text):
 
@@ -62,6 +69,8 @@ def send_message(chat_id, text):
 
     print("SEND:", r.text)
 
+
+# ===== ЗАПУСК =====
 
 if __name__ == "__main__":
 
