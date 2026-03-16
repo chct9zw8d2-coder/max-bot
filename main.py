@@ -6,7 +6,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 API = "https://platform-api.max.ru"
 
-HEADERS = {
+headers = {
     "Authorization": f"Bearer {BOT_TOKEN}",
     "Content-Type": "application/json"
 }
@@ -18,26 +18,27 @@ def get_updates():
 
     global offset
 
-    url = f"{API}/updates"
-
     params = {}
 
     if offset:
         params["offset"] = offset
 
-    r = requests.get(url, headers=HEADERS, params=params)
+    r = requests.get(
+        f"{API}/updates",
+        headers=headers,
+        params=params
+    )
 
     print("STATUS:", r.status_code)
 
     if r.status_code == 429:
 
-        print("RATE LIMIT — sleeping 20 sec")
-        time.sleep(20)
+        print("RATE LIMIT — WAIT 40 sec")
+        time.sleep(40)
         return []
 
     if r.status_code != 200:
-
-        print("BODY:", r.text)
+        print("ERROR:", r.text)
         return []
 
     data = r.json()
@@ -52,14 +53,16 @@ def get_updates():
 
 def send_message(chat_id, text):
 
-    url = f"{API}/messages/send"
-
     payload = {
         "chat_id": chat_id,
         "text": text
     }
 
-    r = requests.post(url, headers=HEADERS, json=payload)
+    r = requests.post(
+        f"{API}/messages/send",
+        headers=headers,
+        json=payload
+    )
 
     print("SEND:", r.status_code)
 
@@ -72,16 +75,16 @@ while True:
 
     for u in updates:
 
-        message = u.get("message")
+        msg = u.get("message")
 
-        if not message:
+        if not msg:
             continue
 
-        chat_id = message["chat"]["chat_id"]
-        text = message.get("text", "")
+        chat_id = msg["chat"]["chat_id"]
+        text = msg.get("text")
 
         print("MESSAGE:", text)
 
         send_message(chat_id, "Сообщение получено")
 
-    time.sleep(12)
+    time.sleep(30)
