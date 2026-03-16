@@ -4,7 +4,7 @@ import os
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-API = "https://platform-api.max.ru/bot/v1"
+API = "https://platform-api.max.ru/v1/bot"
 
 
 def send_message(chat_id, text):
