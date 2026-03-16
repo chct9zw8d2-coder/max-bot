@@ -11,60 +11,38 @@ HEADERS = {
     "Content-Type": "application/json"
 }
 
-AARON_ID = "f9LHodD0cOL-WYXnRJyS7mWEBoC7ycc-eOamlsDOOUxot0lWpbnAKADh3CE"
-
 offset = None
-
-# список клиентов
-clients = {}
 
 
 def get_updates():
-
     global offset
 
-    params = {
-        "timeout": 60
-    }
+    params = {}
 
     if offset:
         params["offset"] = offset
 
-    try:
+    r = requests.get(
+        f"{API}/updates",
+        headers=HEADERS,
+        params=params
+    )
 
-        r = requests.get(
-            f"{API}/updates",
-            headers=HEADERS,
-            params=params,
-            timeout=65
-        )
+    print("STATUS:", r.status_code)
+    print("BODY:", r.text)
 
-        print("STATUS:", r.status_code)
-
-        if r.status_code == 429:
-            print("RATE LIMIT — WAIT 60 SEC")
-            time.sleep(60)
-            return []
-
-        if r.status_code != 200:
-            print("ERROR:", r.text)
-            time.sleep(10)
-            return []
-
-        data = r.json()
-
-        updates = data.get("updates", [])
-
-        if updates:
-            offset = updates[-1]["update_id"] + 1
-
-        return updates
-
-    except Exception as e:
-
-        print("CONNECTION ERROR:", e)
-        time.sleep(10)
+    if r.status_code != 200:
+        time.sleep(30)
         return []
+
+    data = r.json()
+
+    updates = data.get("updates", [])
+
+    if updates:
+        offset = updates[-1]["update_id"] + 1
+
+    return updates
 
 
 def send_message(chat_id, text):
@@ -74,22 +52,16 @@ def send_message(chat_id, text):
         "text": text
     }
 
-    try:
+    r = requests.post(
+        f"{API}/messages/send",
+        headers=HEADERS,
+        json=payload
+    )
 
-        r = requests.post(
-            f"{API}/messages/send",
-            headers=HEADERS,
-            json=payload
-        )
-
-        print("SEND:", r.status_code)
-
-    except Exception as e:
-
-        print("SEND ERROR:", e)
+    print("SEND:", r.status_code, r.text)
 
 
-print("MAX OPERATOR BOT STARTED")
+print("MAX TEST BOT STARTED")
 
 while True:
 
@@ -102,37 +74,13 @@ while True:
         if not message:
             continue
 
-        text = message.get("text", "")
+        text = message.get("text", "").lower()
         chat_id = message["chat"]["chat_id"]
 
-        print("MESSAGE:", chat_id, text)
+        print("MESSAGE:", text)
 
-        # клиент пишет
-        if chat_id != AARON_ID:
+        if text == "привет":
 
-            clients[chat_id] = True
+            send_message(chat_id, "привет")
 
-            forward = f"""
-Клиент: {chat_id}
-
-{text}
-"""
-
-            send_message(AARON_ID, forward)
-
-            send_message(chat_id, "Сообщение передано оператору.")
-
-        # отвечает Аарон
-        else:
-
-            if ":" not in text:
-                continue
-
-            client_id, reply = text.split(":", 1)
-
-            client_id = client_id.strip()
-            reply = reply.strip()
-
-            send_message(client_id, reply)
-
-    time.sleep(1)
+    time.sleep(40)
