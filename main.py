@@ -42,15 +42,20 @@ def send_message(chat_id, text):
 
 
 # -----------------------------
-# получение событий
+# получение событий (long polling)
 # -----------------------------
 def get_events():
 
-    url = f"{API}/events/get"
+    url = f"{API}/events"
 
     headers = {
         "Authorization": f"Bearer {BOT_TOKEN}",
         "Content-Type": "application/json"
+    }
+
+    payload = {
+        "limit": 10,
+        "timeout": 30
     }
 
     try:
@@ -58,12 +63,11 @@ def get_events():
         r = requests.post(
             url,
             headers=headers,
-            timeout=30
+            json=payload,
+            timeout=35
         )
 
         print("EVENT STATUS:", r.status_code)
-
-        # ВАЖНО — смотрим полный ответ API
         print("EVENT RESPONSE:", r.text)
 
         if r.status_code == 200:
@@ -126,7 +130,7 @@ def main():
 
                 print("PROCESS ERROR:", e)
 
-        time.sleep(2)
+        time.sleep(1)
 
 
 # -----------------------------
