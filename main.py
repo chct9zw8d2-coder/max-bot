@@ -6,51 +6,65 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 API = "https://platform-api.max.ru"
 
-headers = {
+HEADERS = {
     "Authorization": f"Bearer {BOT_TOKEN}",
     "Content-Type": "application/json"
 }
 
+AARON_ID = "f9LHodD0cOL-WYXnRJyS7mWEBoC7ycc-eOamlsDOOUxot0lWpbnAKADh3CE"
+
 offset = None
+
+# список клиентов
+clients = {}
 
 
 def get_updates():
 
     global offset
 
-    params = {}
+    params = {
+        "timeout": 60
+    }
 
     if offset:
         params["offset"] = offset
 
-    r = requests.get(
-        f"{API}/updates",
-        headers=headers,
-        params=params
-    )
+    try:
 
-    print("STATUS:", r.status_code)
+        r = requests.get(
+            f"{API}/updates",
+            headers=HEADERS,
+            params=params,
+            timeout=65
+        )
 
-    if r.status_code == 429:
+        print("STATUS:", r.status_code)
 
-        print("RATE LIMIT — WAIT 60 sec")
-        time.sleep(60)
+        if r.status_code == 429:
+            print("RATE LIMIT — WAIT 60 SEC")
+            time.sleep(60)
+            return []
+
+        if r.status_code != 200:
+            print("ERROR:", r.text)
+            time.sleep(10)
+            return []
+
+        data = r.json()
+
+        updates = data.get("updates", [])
+
+        if updates:
+            offset = updates[-1]["update_id"] + 1
+
+        return updates
+
+    except Exception as e:
+
+        print("CONNECTION ERROR:", e)
+        time.sleep(10)
         return []
-
-    if r.status_code != 200:
-
-        print("ERROR:", r.text)
-        time.sleep(60)
-        return []
-
-    data = r.json()
-
-    updates = data.get("updates", [])
-
-    if updates:
-        offset = updates[-1]["update_id"] + 1
-
-    return updates
 
 
 def send_message(chat_id, text):
@@ -60,16 +74,22 @@ def send_message(chat_id, text):
         "text": text
     }
 
-    r = requests.post(
-        f"{API}/messages/send",
-        headers=headers,
-        json=payload
-    )
+    try:
 
-    print("SEND:", r.status_code)
+        r = requests.post(
+            f"{API}/messages/send",
+            headers=HEADERS,
+            json=payload
+        )
+
+        print("SEND:", r.status_code)
+
+    except Exception as e:
+
+        print("SEND ERROR:", e)
 
 
-print("MAX BOT STARTED")
+print("MAX OPERATOR BOT STARTED")
 
 while True:
 
@@ -77,16 +97,42 @@ while True:
 
     for u in updates:
 
-        msg = u.get("message")
+        message = u.get("message")
 
-        if not msg:
+        if not message:
             continue
 
-        chat_id = msg["chat"]["chat_id"]
-        text = msg.get("text")
+        text = message.get("text", "")
+        chat_id = message["chat"]["chat_id"]
 
-        print("MESSAGE:", text)
+        print("MESSAGE:", chat_id, text)
 
-        send_message(chat_id, "Сообщение получено")
+        # клиент пишет
+        if chat_id != AARON_ID:
 
-    time.sleep(45)
+            clients[chat_id] = True
+
+            forward = f"""
+Клиент: {chat_id}
+
+{text}
+"""
+
+            send_message(AARON_ID, forward)
+
+            send_message(chat_id, "Сообщение передано оператору.")
+
+        # отвечает Аарон
+        else:
+
+            if ":" not in text:
+                continue
+
+            client_id, reply = text.split(":", 1)
+
+            client_id = client_id.strip()
+            reply = reply.strip()
+
+            send_message(client_id, reply)
+
+    time.sleep(1)
