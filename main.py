@@ -1,82 +1,59 @@
 import os
-import requests
-import time
+from maxbot import Bot, Dispatcher, Message
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-API = "https://platform-api.max.ru/bot/v1"
+# ID администратора (Аарон)
+ADMIN_ID = "f9LHodD0cOL-WYXnRJyS7mWEBoC7ycc-eOamlsDOOUxot0lWpbnAKADh3CE"
 
-def send_message(chat_id, text):
+bot = Bot(BOT_TOKEN)
+dp = Dispatcher()
 
-    url = f"{API}/messages/send"
-
-    headers = {
-        "Authorization": f"Bearer {BOT_TOKEN}",
-        "Content-Type": "application/json"
-    }
-
-    payload = {
-        "chat_id": chat_id,
-        "text": text
-    }
-
-    r = requests.post(url, headers=headers, json=payload)
-
-    print("SEND:", r.status_code, r.text)
+# запоминаем клиентов
+clients = {}
 
 
-def get_events():
+@dp.message()
+async def handle_message(message: Message):
 
-    url = f"{API}/events/get"
+    user_id = message.user_id
+    chat_id = message.chat_id
+    text = message.text
 
-    headers = {
-        "Authorization": f"Bearer {BOT_TOKEN}"
-    }
+    print("MESSAGE:", user_id, text)
 
-    try:
+    # если пишет администратор
+    if user_id == ADMIN_ID:
 
-        r = requests.post(url, headers=headers)
+        if not clients:
+            await bot.send_message(chat_id, "Нет активных клиентов.")
+            return
 
-        print("EVENT STATUS:", r.status_code)
-        print("EVENT RESPONSE:", r.text)
+        last_client = list(clients.keys())[-1]
 
-        if r.status_code == 200:
+        await bot.send_message(
+            last_client,
+            text
+        )
 
-            data = r.json()
+    # если пишет клиент
+    else:
 
-            return data.get("events", [])
+        clients[chat_id] = chat_id
 
-    except Exception as e:
+        await bot.send_message(
+            ADMIN_ID,
+            f"Новое сообщение клиента:\n{text}"
+        )
 
-        print("EVENT ERROR:", e)
+        await bot.send_message(
+            chat_id,
+            "Сообщение отправлено администратору."
+        )
 
-    return []
 
+if __name__ == "__main__":
 
-print("MAX BOT STARTED")
+    print("MAX BOT STARTED")
 
-while True:
-
-    events = get_events()
-
-    for ev in events:
-
-        try:
-
-            message = ev.get("message")
-
-            if not message:
-                continue
-
-            chat_id = message["chat"]["chat_id"]
-            text = message.get("text", "")
-
-            print("MESSAGE:", text)
-
-            send_message(chat_id, "Сообщение получено.")
-
-        except Exception as e:
-
-            print("PROCESS ERROR:", e)
-
-    time.sleep(2)
+    bot.start_polling(dp)
