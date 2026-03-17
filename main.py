@@ -6,12 +6,12 @@ app = Flask(__name__)
 
 # ===== НАСТРОЙКИ =====
 MAX_TOKEN = os.getenv("MAX_TOKEN")
-print("TOKEN:", MAX_TOKEN)  # 🔍 проверка
+print("TOKEN:", MAX_TOKEN)
 
 API_URL = "https://platform-api.max.ru"
 
 HEADERS = {
-    "Authorization": f"Bearer {MAX_TOKEN}",
+    "Authorization": MAX_TOKEN,  # ❗ БЕЗ Bearer
     "Content-Type": "application/json"
 }
 
@@ -58,7 +58,7 @@ def send_message(chat_id, text):
     }
 
     response = requests.post(
-        f"{API_URL}/chats/sendText",  # 🔥 правильный endpoint
+        f"{API_URL}/messages",  # ← возвращаем норм endpoint
         headers=HEADERS,
         json=payload
     )
