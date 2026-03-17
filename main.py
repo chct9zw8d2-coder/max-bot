@@ -30,7 +30,7 @@ def webhook():
     return "ok"
 
 def send_message(chat_id, text):
-    url = "https://platform-api.max.ru/messages"
+    url = "https://platform-api.max.ru/bot/send"
 
     headers = {
         "Authorization": f"Bearer {MAX_TOKEN}",
@@ -39,7 +39,9 @@ def send_message(chat_id, text):
 
     payload = {
         "chat_id": chat_id,
-        "text": text
+        "message": {
+            "text": text
+        }
     }
 
     response = requests.post(url, json=payload, headers=headers)
