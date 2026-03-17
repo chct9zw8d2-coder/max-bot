@@ -6,16 +6,17 @@ app = Flask(__name__)
 
 # ===== НАСТРОЙКИ =====
 MAX_TOKEN = os.getenv("MAX_TOKEN")
+print("TOKEN:", MAX_TOKEN)  # 🔍 проверка
 
 API_URL = "https://platform-api.max.ru"
 
 HEADERS = {
-    "Authorization": f"Bearer {MAX_TOKEN}",  # ✅ ВАЖНО!
+    "Authorization": f"Bearer {MAX_TOKEN}",
     "Content-Type": "application/json"
 }
 
 
-# ===== ПРОВЕРКА СЕРВЕРА =====
+# ===== ПРОВЕРКА =====
 @app.route("/")
 def home():
     return "MAX BOT WORKING"
@@ -48,7 +49,7 @@ def webhook():
     return jsonify({"ok": True})
 
 
-# ===== ОТПРАВКА СООБЩЕНИЯ =====
+# ===== ОТПРАВКА =====
 def send_message(chat_id, text):
 
     payload = {
@@ -57,7 +58,7 @@ def send_message(chat_id, text):
     }
 
     response = requests.post(
-        f"{API_URL}/messages",
+        f"{API_URL}/chats/sendText",  # 🔥 правильный endpoint
         headers=HEADERS,
         json=payload
     )
@@ -68,10 +69,5 @@ def send_message(chat_id, text):
 
 # ===== ЗАПУСК =====
 if __name__ == "__main__":
-
     port = int(os.environ.get("PORT", 8080))
-
-    app.run(
-        host="0.0.0.0",
-        port=port
-    )
+    app.run(host="0.0.0.0", port=port)
