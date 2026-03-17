@@ -10,7 +10,7 @@ MAX_TOKEN = os.getenv("MAX_TOKEN")
 API_URL = "https://platform-api.max.ru"
 
 HEADERS = {
-    "Authorization": f"Bearer {MAX_TOKEN}",
+    "Authorization": f"Bearer {MAX_TOKEN}",  # ✅ ВАЖНО!
     "Content-Type": "application/json"
 }
 
@@ -33,7 +33,6 @@ def webhook():
 
             message = data.get("message", {})
 
-            # ✅ правильное извлечение из реального JSON
             chat_id = message.get("recipient", {}).get("chat_id")
             text = message.get("body", {}).get("text", "")
 
